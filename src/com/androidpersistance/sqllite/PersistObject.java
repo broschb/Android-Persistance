@@ -9,6 +9,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import android.content.ContentValues;
+
+import com.androidpersistance.annotation.AutoIncrement;
 import com.androidpersistance.annotation.Key;
 
 public class PersistObject {
@@ -18,12 +21,14 @@ public class PersistObject {
 	private Map<String,String> columnTypes;
 	private Map<String, Object> columnValues;
 	private List<String> primaryKey;
+	private List<String> autoIncrementKey;
 	
 	public PersistObject(Object o) {
 		if(o!=null){
 			columnTypes = new HashMap<String, String>();
 			columnValues = new HashMap<String, Object>();
 			primaryKey = new ArrayList<String>();
+			autoIncrementKey = new ArrayList<String>();
 			setup(o);
 		}
 	}
@@ -45,6 +50,9 @@ public class PersistObject {
 			Object annotation = f.getAnnotation(Key.class);
 			if(annotation!=null){
 				primaryKey.add(f.getName());
+				annotation = f.getAnnotation(AutoIncrement.class);
+				if(annotation!=null)
+					autoIncrementKey.add(f.getName());
 			}
 		}
 	}
@@ -84,7 +92,7 @@ public class PersistObject {
 			ft="datetime";
 		else if("java.lang.String".equals(type.getName()))
 			ft="VARCHAR";
-		else if("int".equals(type.getName()))
+		else if("int".equals(type.getName())||"java.lang.Integer".equals(type.getName()))
 			ft="INTEGER";
 		else if("float".equals(type.getName()))
 			ft="REAL";
@@ -107,6 +115,28 @@ public class PersistObject {
 	}
 	
 	/**
+	 * Generates where clause using only primary keys
+	 * @return
+	 */
+	public String generatePrimaryKeyWhereClause(){
+		StringBuilder b = new StringBuilder();
+		boolean first = true;
+		for(String s : primaryKey){
+			String cn = s;
+			Object val = columnValues.get(cn);
+			if(val!=null){
+				if(!first)
+					b.append(" and ");
+				b.append(cn);
+				b.append("=");
+				b.append(val);
+				first = false;
+			}
+		}
+		
+		return b.toString();
+	}
+	/**
 	 * Generates where clause to use in query
 	 * @return
 	 */
@@ -126,8 +156,38 @@ public class PersistObject {
 				first = false;
 			}
 		}
-		
-		return b.toString();
+		String rtn = null;
+		if(b.toString().trim().length()>0)
+			rtn = b.toString();
+		return rtn;
+	}
+	
+	public ContentValues createContentValues(){
+		ContentValues values = new ContentValues();
+		Iterator ii = getColumnValues().keySet().iterator();
+		while(ii.hasNext()){
+			String key = (String) ii.next();
+			Object value = getColumnValues().get(key);
+			if(value!=null){
+				if(value instanceof Boolean)
+					values.put(key, (Boolean)value);
+				else if(value instanceof Long)
+					values.put(key, (Long)value);
+				else if(value instanceof Byte)
+					values.put(key, (Byte)value);
+				else if(value instanceof Double)
+					values.put(key, (Double)value);
+				else if(value instanceof Float)
+					values.put(key, (Float)value);
+				else if(value instanceof Integer)
+					values.put(key, (Integer)value);
+				else if(value instanceof Short)
+					values.put(key, (Short)value);
+				else if(value instanceof String)
+					values.put(key, (String)value);
+			}
+		}
+		return values;
 	}
 
 	public String getTableName() {
@@ -168,5 +228,13 @@ public class PersistObject {
 
 	public void setClassName(String className) {
 		this.className = className;
+	}
+
+	public List<String> getAutoIncrementKey() {
+		return autoIncrementKey;
+	}
+
+	public void setAutoIncrementKey(List<String> autoIncrementKey) {
+		this.autoIncrementKey = autoIncrementKey;
 	}
 }

@@ -9,16 +9,20 @@ import android.database.sqlite.SQLiteQuery;
 
 public class APCursorFactory implements SQLiteDatabase.CursorFactory{
 	
-	Map<String,String> tableToClassMappings;
+	private Map<String,String> tableToClassMappings;
+	private APCursor cursor;
 	
 	public void updateMappings(Map<String,String> tableToClassMappings){
 		this.tableToClassMappings = tableToClassMappings;
+		if(cursor!=null)
+			cursor.setTableToClassMappings(tableToClassMappings);
 	}
 
 	@Override
 	public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery,
 			String editTable, SQLiteQuery query) {
-		return new APCursor(db, masterQuery, editTable, query,tableToClassMappings);
+		cursor = new APCursor(db, masterQuery, editTable, query,tableToClassMappings); 
+		return cursor;
 	}
 
 }

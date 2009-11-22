@@ -97,4 +97,8 @@ public class APCursor extends SQLiteCursor{//for money or love encore
 		return m;
 	}
 
+	public void setTableToClassMappings(Map<String, String> tableToClassMappings) {
+		this.tableToClassMappings = tableToClassMappings;
+	}
+
 }
